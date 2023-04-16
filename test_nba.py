@@ -117,7 +117,8 @@ def vis_result(test_loader, args):
         best_guess = prediction[indices,np.arange(batch*actor_num)]
         best_guess = np.reshape(best_guess, (batch,actor_num, args.future_length, 2))
         gt = np.reshape(future_traj,(batch,actor_num,args.future_length, 2))
-        previous_3D = np.reshape(previous_3D,(batch,actor_num,args.future_length, 2))
+        past_traj = np.array(data['past_traj']) * args.traj_scale # B,N,T,2
+        previous_3D = np.reshape(past_traj,(batch,actor_num,args.past_length, 2))
 
         draw_result(best_guess,previous_3D)
         draw_result(gt,previous_3D,mode='gt')

@@ -31,7 +31,7 @@ class NBADataset(Dataset):
             data_root = 'datasets/nba/train.npy'
         else:
             data_root = 'datasets/nba/test.npy'
-
+        
         self.trajs = np.load(data_root) 
         self.trajs /= (94/28) # Turn to meters
 
@@ -41,7 +41,7 @@ class NBADataset(Dataset):
             self.trajs = self.trajs[:12500]
 
         self.batch_len = len(self.trajs)
-        print(self.batch_len)
+        # print(self.batch_len)
 
         self.traj_abs = torch.from_numpy(self.trajs).type(torch.float)
         self.traj_norm = torch.from_numpy(self.trajs-self.trajs[:,self.obs_len-1:self.obs_len]).type(torch.float)
@@ -49,6 +49,7 @@ class NBADataset(Dataset):
         self.traj_abs = self.traj_abs.permute(0,2,1,3)
         self.traj_norm = self.traj_norm.permute(0,2,1,3)
         # print(self.traj_abs.shape)
+        # print(self.traj_norm.shape)
 
     def __len__(self):
         return self.batch_len

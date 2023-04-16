@@ -5,13 +5,14 @@ import time
 import numpy as np
 import torch
 import random
+import math
 from torch import optim
 from torch.optim import lr_scheduler
 sys.path.append(os.getcwd())
 from torch.utils.data import DataLoader
+
 from data.dataloader_nba import NBADataset, seq_collate
 from model.GroupNet_nba import GroupNet
-import math
 
 def train(train_loader,epoch):
     model.train()
@@ -23,6 +24,12 @@ def train(train_loader,epoch):
         optimizer.zero_grad()
         total_loss.backward()
         optimizer.step()
+
+        # 可能改进点: 梯度累加（https://blog.csdn.net/weixin_36670529/article/details/108630740）
+        # total_loss.backward()
+        # if((i+1)%accumulation_steps)==0:
+        #     optimizer.step()
+        #     optimizer.zero_grad()
 
         if iter_num % args.iternum_print == 0:
             print('Epochs: {:02d}/{:02d}| It: {:04d}/{:04d} | Total loss: {:03f}| Loss_pred: {:03f}| Loss_recover: {:03f}| Loss_kl: {:03f}| Loss_diverse: {:03f}'
@@ -117,6 +124,3 @@ if __name__ == '__main__':
             model_saved = {'model_dict': model.state_dict(), 'optimizer': optimizer.state_dict(), 'scheduler': scheduler.state_dict(), 'epoch': epoch + 1,'model_cfg': args}
             saved_path = os.path.join(args.model_save_dir,str(epoch+1)+'.p')
             torch.save(model_saved, saved_path)
-
-
-
