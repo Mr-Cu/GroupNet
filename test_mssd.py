@@ -16,19 +16,10 @@ import matplotlib.lines as mlines
 
 class Constant:
     """A class for handling constants"""
-    # NORMALIZATION_COEF = 7
-    # PLAYER_CIRCLE_SIZE = 12 / NORMALIZATION_COEF
-    # INTERVAL = 10
     X_MIN = 0
     X_MAX = 105
     Y_MIN = 0
     Y_MAX = 68
-    # COL_WIDTH = 0.3
-    SCALE = 1.65
-    # FONTSIZE = 6
-    # X_CENTER = X_MAX / 2
-    # Y_CENTER = Y_MAX / 2
-    # MESSAGE = 'You can rerun the script and choose any event from 0 to '
 
 def draw_result(future,past,mode='pre'):
     # b n t 2
@@ -51,16 +42,18 @@ def draw_result(future,past,mode='pre'):
 
         colorteam1 = 'dodgerblue'
         colorteam2 = 'orangered'
-        colorball = 'limegreen'
+        # colorball = 'limegreen'
+        colorball = 'gold'
         colorteam1_pre = 'skyblue'
         colorteam2_pre = 'lightsalmon'
-        colorball_pre = 'mediumspringgreen'
+        # colorball_pre = 'mediumspringgreen'
+        colorball_pre = 'khaki'
 		
         for j in range(actor_num):
-            if j < 5:
+            if 0 < j < 12:
                 color = colorteam1
                 color_pre = colorteam1_pre
-            elif j < 10:
+            elif 12< j < 23:
                 color = colorteam2
                 color_pre = colorteam2_pre
             else:
@@ -71,9 +64,9 @@ def draw_result(future,past,mode='pre'):
                 (x, y) = zip(*points)
                 # plt.scatter(x, y, color=color,s=20,alpha=0.3+i*((1-0.3)/length))
                 if i < 5:
-                    plt.scatter(x, y, color=color_pre,s=20,alpha=1)
+                    plt.scatter(x, y, color=color_pre,s=5,alpha=1)
                 else:
-                    plt.scatter(x, y, color=color,s=20,alpha=1)
+                    plt.scatter(x, y, color=color,s=5,alpha=1)
 
             for i in range(length-1):
                 points = [(traj[j,i,0],traj[j,i,1]),(traj[j,i+1,0],traj[j,i+1,1])]
@@ -114,7 +107,8 @@ def vis_result(test_loader, args):
         best_guess = prediction[indices,np.arange(batch*actor_num)]
         best_guess = np.reshape(best_guess, (batch,actor_num, args.future_length, 2))
         gt = np.reshape(future_traj,(batch,actor_num,args.future_length, 2))
-        previous_3D = np.reshape(previous_3D,(batch,actor_num,args.future_length, 2))
+        past_traj = np.array(data['past_traj']) * args.traj_scale # B,N,T,2
+        previous_3D = np.reshape(past_traj,(batch,actor_num,args.past_length, 2))
 
         draw_result(best_guess,previous_3D)
         draw_result(gt,previous_3D,mode='gt')

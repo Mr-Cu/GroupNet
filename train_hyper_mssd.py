@@ -25,12 +25,6 @@ def train(train_loader,epoch):
         total_loss.backward()
         optimizer.step()
 
-        # 可能改进点: 梯度累加（https://blog.csdn.net/weixin_36670529/article/details/108630740）
-        # total_loss.backward()
-        # if((i+1)%accumulation_steps)==0:
-        #     optimizer.step()
-        #     optimizer.zero_grad()
-
         if iter_num % args.iternum_print == 0:
             print('Epochs: {:02d}/{:02d}| It: {:04d}/{:04d} | Total loss: {:03f}| Loss_pred: {:03f}| Loss_recover: {:03f}| Loss_kl: {:03f}| Loss_diverse: {:03f}'
             .format(epoch,args.num_epochs,iter_num,total_iter_num,total_loss.item(),loss_pred,loss_recover,loss_kl,loss_diverse))
@@ -61,7 +55,7 @@ if __name__ == '__main__':
     parser.add_argument('--ztype', default='gaussian')
     parser.add_argument('--zdim', type=int, default=32)
     parser.add_argument('--hidden_dim', type=int, default=64)
-    parser.add_argument('--hyper_scales', nargs='+', type=int,default=[5,11])
+    parser.add_argument('--hyper_scales', nargs='+', type=int,default=[3,4,5,6,23])
     parser.add_argument('--num_decompose', type=int, default=2)
     parser.add_argument('--min_clip', type=float, default=2.0)
 
@@ -70,7 +64,6 @@ if __name__ == '__main__':
 
     parser.add_argument('--epoch_continue', type=int, default=0)
     parser.add_argument('--gpu', type=int, default=0)
-    # os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
     args = parser.parse_args()
 
     """ setup """
@@ -107,11 +100,15 @@ if __name__ == '__main__':
     """ Loading if needed """
     if args.epoch_continue > 0:
         checkpoint_path = os.path.join(args.model_save_dir,str(args.epoch_continue)+'.p')
-        print('load model from: {checkpoint_path}')
-        model_load = torch.load(checkpoint_path, map_location='cpu')
+        print('load model from: {}'.format(checkpoint_path))
+        model_load = torch.load(checkpoint_path, map_location=lambda storage, loc: storage)
         model.load_state_dict(model_load['model_dict'])
         if 'optimizer' in model_load:
             optimizer.load_state_dict(model_load['optimizer'])
+            for state in optimizer.state.values():
+                for k, v in state.items():
+                    if torch.is_tensor(v):
+                        state[k] = v.cuda()
         if 'scheduler' in model_load:
             scheduler.load_state_dict(model_load['scheduler'])
 

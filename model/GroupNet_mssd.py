@@ -221,6 +221,26 @@ class PastEncoder(nn.Module):
                 nmp_layers=1,
                 scale=args.hyper_scales[2]
             )
+        if len(args.hyper_scales) > 3:
+            self.interaction_hyper4 = MS_HGNN_hyper(
+                embedding_dim=self.model_dim,
+                h_dim=self.model_dim,
+                mlp_dim=64,
+                bottleneck_dim=self.model_dim,
+                batch_norm=0,
+                nmp_layers=1,
+                scale=args.hyper_scales[3]
+            )
+        if len(args.hyper_scales) > 4:
+            self.interaction_hyper5 = MS_HGNN_hyper(
+                embedding_dim=self.model_dim,
+                h_dim=self.model_dim,
+                mlp_dim=64,
+                bottleneck_dim=self.model_dim,
+                batch_norm=0,
+                nmp_layers=1,
+                scale=args.hyper_scales[4]
+            )
 
         self.pos_encoder = PositionalAgentEncoding(self.model_dim, 0.1, concat=True)
     
@@ -228,9 +248,6 @@ class PastEncoder(nn.Module):
         B = x.shape[0]
         N = x.shape[1]
         category = torch.zeros(N,3).type_as(x)
-        # category[0:5,0] = 1
-        # category[5:10,1] = 1
-        # category[10,2] = 1
         category[1:12,0] = 1
         category[12:23,1] = 1
         category[0,2] = 1
@@ -257,6 +274,10 @@ class PastEncoder(nn.Module):
             ftraj_inter_hyper2,_ = self.interaction_hyper2(ftraj_input,feat_corr)
         if len(self.args.hyper_scales) > 2:
             ftraj_inter_hyper3,_ = self.interaction_hyper3(ftraj_input,feat_corr)
+        if len(self.args.hyper_scales) > 3:
+            ftraj_inter_hyper4,_ = self.interaction_hyper4(ftraj_input,feat_corr)
+        if len(self.args.hyper_scales) > 4:
+            ftraj_inter_hyper5,_ = self.interaction_hyper5(ftraj_input,feat_corr)
 
         if len(self.args.hyper_scales) == 0:
             final_feature = torch.cat((ftraj_input,ftraj_inter),dim=-1)
@@ -266,6 +287,10 @@ class PastEncoder(nn.Module):
             final_feature = torch.cat((ftraj_input,ftraj_inter,ftraj_inter_hyper,ftraj_inter_hyper2),dim=-1)
         elif len(self.args.hyper_scales) == 3:
             final_feature = torch.cat((ftraj_input,ftraj_inter,ftraj_inter_hyper,ftraj_inter_hyper2,ftraj_inter_hyper3),dim=-1)
+        elif len(self.args.hyper_scales) == 4:
+            final_feature = torch.cat((ftraj_input,ftraj_inter,ftraj_inter_hyper,ftraj_inter_hyper2,ftraj_inter_hyper3,ftraj_inter_hyper4),dim=-1)
+        elif len(self.args.hyper_scales) == 5:
+            final_feature = torch.cat((ftraj_input,ftraj_inter,ftraj_inter_hyper,ftraj_inter_hyper2,ftraj_inter_hyper3,ftraj_inter_hyper4,ftraj_inter_hyper5),dim=-1)
 
         output_feature = final_feature.view(batch_size*agent_num,-1)
         return output_feature
@@ -324,6 +349,28 @@ class FutureEncoder(nn.Module):
                 scale=args.hyper_scales[2],
                 vis=False
             )
+        if len(args.hyper_scales) > 3:
+            self.interaction_hyper4 = MS_HGNN_hyper(
+                embedding_dim=self.model_dim,
+                h_dim=self.model_dim,
+                mlp_dim=64,
+                bottleneck_dim=self.model_dim,
+                batch_norm=0,
+                nmp_layers=1,
+                scale=args.hyper_scales[3],
+                vis=False
+            )
+        if len(args.hyper_scales) > 4:
+            self.interaction_hyper5 = MS_HGNN_hyper(
+                embedding_dim=self.model_dim,
+                h_dim=self.model_dim,
+                mlp_dim=64,
+                bottleneck_dim=self.model_dim,
+                batch_norm=0,
+                nmp_layers=1,
+                scale=args.hyper_scales[4],
+                vis=False
+            )
 
         self.pos_encoder = PositionalAgentEncoding(self.model_dim, 0.1, concat=True)
 
@@ -335,9 +382,6 @@ class FutureEncoder(nn.Module):
         B = x.shape[0]
         N = x.shape[1]
         category = torch.zeros(N,3).type_as(x)
-        # category[0:5,0] = 1
-        # category[5:10,1] = 1
-        # category[10,2] = 1
         category[1:12,0] = 1
         category[12:23,1] = 1
         category[0,2] = 1
@@ -347,7 +391,6 @@ class FutureEncoder(nn.Module):
 
     def forward(self, inputs, batch_size,agent_num,past_feature):
         length = inputs.shape[1]
-        # agent_num = 11
         agent_num = 23
         tf_in = self.input_fc(inputs).view(batch_size*agent_num, length, self.model_dim)
 
@@ -366,6 +409,10 @@ class FutureEncoder(nn.Module):
             ftraj_inter_hyper2,_ = self.interaction_hyper2(ftraj_input,feat_corr)
         if len(self.args.hyper_scales) > 2:
             ftraj_inter_hyper3,_ = self.interaction_hyper3(ftraj_input,feat_corr)
+        if len(self.args.hyper_scales) > 3:
+            ftraj_inter_hyper4,_ = self.interaction_hyper4(ftraj_input,feat_corr)
+        if len(self.args.hyper_scales) > 4:
+            ftraj_inter_hyper5,_ = self.interaction_hyper5(ftraj_input,feat_corr)
 
         if len(self.args.hyper_scales) == 0:
             final_feature = torch.cat((ftraj_input,ftraj_inter),dim=-1)
@@ -375,7 +422,10 @@ class FutureEncoder(nn.Module):
             final_feature = torch.cat((ftraj_input,ftraj_inter,ftraj_inter_hyper,ftraj_inter_hyper2),dim=-1)
         elif len(self.args.hyper_scales) == 3:
             final_feature = torch.cat((ftraj_input,ftraj_inter,ftraj_inter_hyper,ftraj_inter_hyper2,ftraj_inter_hyper3),dim=-1)
-
+        elif len(self.args.hyper_scales) == 4:
+            final_feature = torch.cat((ftraj_input,ftraj_inter,ftraj_inter_hyper,ftraj_inter_hyper2,ftraj_inter_hyper3,ftraj_inter_hyper4),dim=-1)
+        elif len(self.args.hyper_scales) == 5:
+            final_feature = torch.cat((ftraj_input,ftraj_inter,ftraj_inter_hyper,ftraj_inter_hyper2,ftraj_inter_hyper3,ftraj_inter_hyper4,ftraj_inter_hyper5),dim=-1)
 
         final_feature = final_feature.view(batch_size*agent_num,-1)
 

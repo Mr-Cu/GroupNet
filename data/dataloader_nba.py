@@ -48,8 +48,9 @@ class NBADataset(Dataset):
 
         self.traj_abs = self.traj_abs.permute(0,2,1,3)
         self.traj_norm = self.traj_norm.permute(0,2,1,3)
-        # print(self.traj_abs.shape)
-        # print(self.traj_norm.shape)
+        # print(self.traj_abs.shape) #[32500, 11, 15, 2]
+        # print(self.traj_norm.shape) #[32500, 11, 15, 2]
+        # assert 1<0
 
     def __len__(self):
         return self.batch_len

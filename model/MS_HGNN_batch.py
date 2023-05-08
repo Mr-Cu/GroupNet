@@ -344,13 +344,15 @@ class MS_HGNN_hyper(nn.Module):
     def init_adj_attention(self, feat,feat_corr, scale_factor=2):
         batch = feat.shape[0]
         actor_number = feat.shape[1]
+        # print(actor_number) #eth:1, nba:11
+        # print(scale_factor) #eth:空, nba:5,11
         if scale_factor == actor_number:
             H_matrix = torch.ones(batch,1,actor_number).type_as(feat)
             return H_matrix
         group_size = scale_factor
         if group_size < 1:
             group_size = 1
-
+        # print(group_size) #eth:空, nba:5,11
         _,indice = torch.topk(feat_corr,dim=2,k=group_size,largest=True)
         H_matrix = torch.zeros(batch,actor_number,actor_number).type_as(feat)
         H_matrix = H_matrix.scatter(2,indice,1)

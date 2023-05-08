@@ -3,7 +3,6 @@ import os, random, numpy as np, copy
 from torch.utils.data import Dataset
 import torch
 
-
 def seq_collate(data):
 
     (past_traj, future_traj) = zip(*data)
@@ -35,9 +34,9 @@ class MSSDDataset(Dataset):
         self.trajs = np.load(data_root) 
 
         if training:
-            self.trajs = self.trajs[:7500]
+            self.trajs = self.trajs[:1750]
         else:
-            self.trajs = self.trajs[:2500]
+            self.trajs = self.trajs[:500]
 
         self.batch_len = len(self.trajs)
         # print(self.batch_len)

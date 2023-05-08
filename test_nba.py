@@ -42,6 +42,7 @@ def draw_result(future,past,mode='pre'):
         traj = traj*94/28
         actor_num = traj.shape[0]
         length = traj.shape[1]
+        print(length)
         
         ax = plt.axes(xlim=(Constant.X_MIN,
                             Constant.X_MAX),
@@ -122,6 +123,7 @@ def vis_result(test_loader, args):
 
         draw_result(best_guess,previous_3D)
         draw_result(gt,previous_3D,mode='gt')
+        # print("success")
     return 
 
 def test_model_all(test_loader, args):
@@ -150,15 +152,23 @@ def test_model_all(test_loader, args):
 
     for data in test_loader:
         future_traj = np.array(data['future_traj']) * args.traj_scale # B,N,T,2
+        # print(future_traj.shape) #(128, 11, 10, 2)
         with torch.no_grad():
             prediction = model.inference(data)
+        # print(prediction.shape) #torch.Size([20, 1408, 10, 2])
         prediction = prediction * args.traj_scale
+        # print(prediction.shape) #torch.Size([20, 1408, 10, 2])
         prediction = np.array(prediction.cpu()) #(BN,20,T,2)
+        # print(prediction.shape) #(20, 1408, 10, 2)
         batch = future_traj.shape[0]
+        # print(batch) #都是128
         actor_num = future_traj.shape[1]
+        # print(actor_num) #11
 
         y = np.reshape(future_traj,(batch*actor_num,args.future_length, 2))
+        # print(y.shape) #(1408, 10, 2)
         y = y[None].repeat(20,axis=0)
+        # print(y.shape) #(20, 1408, 10, 2)
         l2error_avg_04s += np.mean(np.min(np.mean(np.linalg.norm(y[:,:,:1,:] - prediction[:,:,:1,:], axis = 3),axis=2),axis=0))*batch
         l2error_dest_04s += np.mean(np.min(np.mean(np.linalg.norm(y[:,:,0:1,:] - prediction[:,:,0:1,:], axis = 3),axis=2),axis=0))*batch
         l2error_avg_08s += np.mean(np.min(np.mean(np.linalg.norm(y[:,:,:2,:] - prediction[:,:,:2,:], axis = 3),axis=2),axis=0))*batch

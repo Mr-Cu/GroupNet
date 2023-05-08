@@ -47,6 +47,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=1)
     parser.add_argument('--dataset', default='nba')
     parser.add_argument('--batch_size', type=int, default=32)
+    # parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--past_length', type=int, default=5)
     parser.add_argument('--future_length', type=int, default=10)
     parser.add_argument('--traj_scale', type=int, default=1)
@@ -70,7 +71,6 @@ if __name__ == '__main__':
 
     parser.add_argument('--epoch_continue', type=int, default=0)
     parser.add_argument('--gpu', type=int, default=0)
-    # os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
     args = parser.parse_args()
 
     """ setup """
@@ -95,6 +95,8 @@ if __name__ == '__main__':
         obs_len=args.past_length,
         pred_len=args.future_length,
         training=True)
+    # print(train_set.traj_abs.shape) #torch.Size([32500, 11, 15, 2])
+    # assert 1<0
 
     train_loader = DataLoader(
         train_set,
@@ -107,11 +109,15 @@ if __name__ == '__main__':
     """ Loading if needed """
     if args.epoch_continue > 0:
         checkpoint_path = os.path.join(args.model_save_dir,str(args.epoch_continue)+'.p')
-        print('load model from: {checkpoint_path}')
-        model_load = torch.load(checkpoint_path, map_location='cpu')
+        print('load model from: {}'.format(checkpoint_path))
+        model_load = torch.load(checkpoint_path, map_location=lambda storage, loc: storage)
         model.load_state_dict(model_load['model_dict'])
         if 'optimizer' in model_load:
             optimizer.load_state_dict(model_load['optimizer'])
+            for state in optimizer.state.values():
+                for k, v in state.items():
+                    if torch.is_tensor(v):
+                        state[k] = v.cuda()
         if 'scheduler' in model_load:
             scheduler.load_state_dict(model_load['scheduler'])
 

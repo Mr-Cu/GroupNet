@@ -9,6 +9,7 @@ from model.utils import initialize_weights
 from .MS_HGNN_batch import MS_HGNN_oridinary,MS_HGNN_hyper, MLP
 import math
 
+#只在Decoder中调用，用于平衡轨迹重构任务和轨迹预测任务
 class DecomposeBlock(nn.Module):
     '''
     Balance between reconstruction task and prediction task.
@@ -103,6 +104,7 @@ class Normal:
     def mode(self):
         return self.mu
 
+#只在FutureEncoder中调用
 class MLP2(nn.Module):
     def __init__(self, input_dim, hidden_dims=(128, 128), activation='tanh'):
         super().__init__()
@@ -127,7 +129,7 @@ class MLP2(nn.Module):
             x = self.activation(affine(x))
         return x
 
-
+#在PastEncoder和FutureEncoder中调用
 """ Positional Encoding """
 class PositionalAgentEncoding(nn.Module):
     def __init__(self, d_model, dropout=0.1, max_t_len=200, concat=True):
@@ -241,9 +243,12 @@ class PastEncoder(nn.Module):
         tf_in = self.input_fc(inputs).view(batch_size*agent_num, length, self.model_dim)
 
         tf_in_pos = self.pos_encoder(tf_in, num_a=batch_size*agent_num)
+        # print(tf_in_pos.shape) #torch.Size([352, 5, 64])
         tf_in_pos = tf_in_pos.view(batch_size, agent_num, length, self.model_dim)
-  
+        # print(tf_in_pos.shape) #torch.Size([32, 11, 5, 64])
         ftraj_input = self.input_fc2(tf_in_pos.contiguous().view(batch_size, agent_num, length*self.model_dim))
+        # print(ftraj_input.shape) #torch.Size([32, 11, 64])
+
         ftraj_input = self.input_fc3(self.add_category(ftraj_input))
         query_input = F.normalize(ftraj_input,p=2,dim=2)
         feat_corr = torch.matmul(query_input,query_input.permute(0,2,1))
@@ -272,9 +277,9 @@ class FutureEncoder(nn.Module):
         super().__init__()
         self.args = args
         self.model_dim = args.hidden_dim
+        scale_num = 2 + len(self.args.hyper_scales)
 
         self.input_fc = nn.Linear(in_dim, self.model_dim)
-        scale_num = 2 + len(self.args.hyper_scales)
         self.input_fc2 = nn.Linear(self.model_dim*self.args.future_length, self.model_dim)
         self.input_fc3 = nn.Linear(self.model_dim+3, self.model_dim)
 
@@ -341,6 +346,7 @@ class FutureEncoder(nn.Module):
 
     def forward(self, inputs, batch_size,agent_num,past_feature):
         length = inputs.shape[1]
+        # print(inputs.shape) #[352, 10, 4]
         agent_num = 11
         tf_in = self.input_fc(inputs).view(batch_size*agent_num, length, self.model_dim)
 
@@ -348,7 +354,11 @@ class FutureEncoder(nn.Module):
         tf_in_pos = tf_in_pos.view(batch_size, agent_num, length, self.model_dim)
 
         ftraj_input = self.input_fc2(tf_in_pos.contiguous().view(batch_size, agent_num, -1))
+        # print(ftraj_input.shape) #[32, 11, 64]
         ftraj_input = self.input_fc3(self.add_category(ftraj_input))
+        # print(ftraj_input.shape) #[32, 11, 64]
+        # print(self.add_category(ftraj_input).shape) #[32, 11, 67]
+        # assert 1<0
         query_input = F.normalize(ftraj_input,p=2,dim=2)
         feat_corr = torch.matmul(query_input,query_input.permute(0,2,1))
         ftraj_inter,_ = self.interaction(ftraj_input)
@@ -394,6 +404,7 @@ class Decoder(nn.Module):
 
     def forward(self, past_feature, z, batch_size_curr, agent_num_perscene, past_traj, cur_location, sample_num, mode='train'):
         agent_num = batch_size_curr * agent_num_perscene
+        #注意这句话，其实是在统计所有场景中的智能体总数，包括重复的，其实就相当于NMMP处理后数据的第一维
         past_traj_repeat = past_traj.repeat_interleave(sample_num, dim=0)
         past_feature = past_feature.view(-1,sample_num,past_feature.shape[-1])
 
@@ -556,15 +567,20 @@ class GroupNet(nn.Module):
         agent_num = data['past_traj'].shape[1]
         
         past_traj = data['past_traj'].view(batch_size*agent_num,self.args.past_length,2).to(device).contiguous()
+        # print(past_traj.shape) #torch.Size([1408, 5, 2])
 
         past_vel = past_traj[:,1:] - past_traj[:,:-1, :]
+        # print(past_vel.shape) #torch.Size([1408, 4, 2])
         past_vel = torch.cat([past_vel[:,[0]], past_vel], dim=1)
+        # print(past_vel.shape) #torch.Size([1408, 5, 2])
 
         cur_location = past_traj[:,[-1]]
 
         inputs = torch.cat((past_traj,past_vel),dim=-1)
+        # print(inputs.shape) #torch.Size([1408, 5, 4])
 
         past_feature = self.past_encoder(inputs,batch_size,agent_num)
+        # print(past_feature.shape) #torch.Size([1408, 256])
 
         sample_num = 20
         if self.args.learn_prior:
